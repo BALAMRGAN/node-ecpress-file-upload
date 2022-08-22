@@ -1,5 +1,9 @@
 const FormData = require('form-data');
 const axios = require('axios');
+const AuthHelper = require('../helpers/auth-helper');
+
+// to read env files
+require('dotenv').config()
 
 exports.process_logs = (req, res, next) => {
     try {
@@ -12,17 +16,39 @@ exports.process_logs = (req, res, next) => {
             //request body will have other form-data paramss
             console.log(req.body);
             var axiosRequests = [];
-            req.files["logs"].forEach(file => {
+
+            var logFiles = [];
+            // check number of log files uploaded.. if 1 file type will be object, if more than 1 it will be array
+            if (req.files["logs"].length == null) {
+                logFiles.push(req.files["logs"]);
+            }
+            else {
+                logFiles = req.files["logs"];
+            }
+
+            logFiles.forEach(file => {
                 var bodyFormData = new FormData();
-                bodyFormData.append("json_file", req.files["json_file"].data);
-                bodyFormData.append("txt_file", req.files["txt_file"].data);
-                bodyFormData.append("log", file.data);
+                // to read text file
+                // var textContent = req.files["txt_file"].data.toString();
+
+                // to read json file as object
+                // var jsonObject = JSON.parse(req.files["json_file"].data.toString());
+
+                bodyFormData.append("dumpstate", file.data, file.name);
+                bodyFormData.append("tag_descriptor", req.files["json_file"].data, req.files["json_file"].name);
+                bodyFormData.append("arguments", file.data, file.name);
+                bodyFormData.append("profile", "e2e");
+                bodyFormData.append("device_os", "android");
+                bodyFormData.append("set_id", "1661183445");
+                bodyFormData.append("is_final", 'false');
+                bodyFormData.append("utterance", "show_all_pictures");
+
                 axiosRequests.push(
                     axios({
                         method: "POST",
-                        url: `http://localhost:3000/logs/process_dummy_api`,
+                        url: process.env.EXTERNAL_API_END_POINT + `/logs/process_dummy_api`,
                         data: bodyFormData,
-                        headers: { "Content-Type": "multipart/form-data" },
+                        headers: { "Content-Type": "multipart/form-data", "access_token": AuthHelper.getAccessToken() },
                     })
                 );
             });
@@ -37,7 +63,13 @@ exports.process_logs = (req, res, next) => {
                     message: "successfully uploaded files",
                     data: responseList
                 });
+                // if token expiry error, re-genrate token
+                // AuthHelper.getAccessToken();
+                // this.process_logs(req, res, next);
             })).catch(errors => {
+                // if token expiry error, re-genrate token
+                // AuthHelper.getAccessToken();
+                // this.process_logs(req, res, next);
                 console.log(errors);
             })
         }

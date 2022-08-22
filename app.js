@@ -4,10 +4,14 @@ const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 
 const logProcessorRoutes = require("./api/routes/log-processor");
+const AuthHelper = require("./api/helpers/auth-helper");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(fileUpload());
+
+// generate token on application startup
+AuthHelper.getAccessToken();
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
